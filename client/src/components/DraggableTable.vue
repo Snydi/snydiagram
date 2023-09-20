@@ -9,14 +9,20 @@
         <table>
           <thead>
           <tr>
-            <th v-for="(column, columnIndex) in columnWidths" :key="columnIndex" :style="{ width: column.width }">{{ column.name }}</th>
+            <th>Name</th>
+            <th>Type</th>
+            <!-- Add more columns if needed -->
           </tr>
           </thead>
           <tbody>
-          <tr v-for="(row, rowIndex) in tableData" :key="rowIndex">
-            <td v-for="(column, columnIndex) in columnWidths" :key="columnIndex" :style="{ width: column.width }">
-              <input type="text" v-model="row[column.name]" :style="{ width: column.inputWidth }" />
+          <tr v-for="(row, rowIndex) in tableData.rows" :key="rowIndex">
+            <td>
+              <input type="text" v-model="row.Name" :style="{ width: '100%' }" />
             </td>
+            <td>
+              <input type="text" v-model="row.Type" :style="{ width: '100%' }" />
+            </td>
+            <!-- Add more columns if needed -->
           </tr>
           </tbody>
         </table>
@@ -27,12 +33,13 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 
 export default {
   props: {
-    index: Number, // Add a prop to pass the index of the table
-    onRemove: Function, // Add a prop to pass the remove function from the parent
+    index: Number,
+    onRemove: Function,
+    tableData: Object,
   },
   setup(props) {
     const isDragging = ref(false);
@@ -40,16 +47,6 @@ export default {
     const containerTop = ref(0);
     const initialX = ref(0);
     const initialY = ref(0);
-
-    const tableData = reactive([
-      { "Name": "", "Type": "" },
-    ]);
-
-    const columnWidths = reactive([
-      { name: 'Name', width: '100px', inputWidth: '100%' },
-      { name: 'Type', width: '50px', inputWidth: '100%' },
-      // Add more columns with their respective widths as needed
-    ]);
 
     const startDrag = (event) => {
       if (event.target.classList.contains("draggable-handle")) {
@@ -78,15 +75,13 @@ export default {
     };
 
     const addRow = () => {
-      const newRow = {};
-      columnWidths.forEach(column => {
-        newRow[column.name] = "";
+      props.tableData.rows.push({
+        Name: "",
+        Type: "",
       });
-      tableData.push(newRow);
     };
 
     const removeTable = () => {
-      // Call the remove function passed from the parent component
       props.onRemove(props.index);
     };
 
@@ -102,8 +97,6 @@ export default {
       isDragging,
       containerLeft,
       containerTop,
-      tableData,
-      columnWidths,
       startDrag,
       dragContainer,
       stopDrag,
@@ -113,6 +106,11 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Styles remain the same */
+</style>
+
 
 <style scoped>
 .draggable-container {

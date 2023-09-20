@@ -2,14 +2,17 @@
   <div id="app">
     <Header />
 
-    <DraggableTable
-        v-for="(table, index) in tables"
-        :key="index"
-        :index="table.id"
-        :onRemove="removeTable"
-    ></DraggableTable>
+    <div v-for="(table, index) in tables" :key="table.Id">
+      <DraggableTable
+          :index="index"
+          :onRemove="removeTable"
+          :tableData="table"
+          @addRow="addRowToTable(index)"
+      ></DraggableTable>
+    </div>
 
     <button @click="addTable">Add Table</button>
+    <button @click="sendTablesToApi">Send Tables to API</button>
   </div>
 </template>
 
@@ -17,29 +20,35 @@
 import { ref } from 'vue';
 import DraggableTable from './components/DraggableTable.vue';
 import Header from './components/Header.vue';
-import axios from 'axios'; // Import Axios
+import axios from 'axios';
 
 export default {
   setup() {
-    const tables = ref([
-    ]);
+    const tables = ref([]);
 
     const addTable = () => {
-      tables.value.push({
-        id: Date.now(),
-        Name: "", // Add the "Name" property for the new table
-        Type: "", // Add the "Type" property for the new table
-      });
+      const newTable = {
+        Id: Date.now(), // Use "Id" instead of "id"
+        rows: [], // Initialize an empty array for "rows"
+      };
+      tables.value.push(newTable);
     };
 
     const removeTable = (index) => {
-      tables.value = tables.value.filter((table) => table.id !== index);
+      tables.value.splice(index, 1);
+    };
+
+    const addRowToTable = (tableIndex) => {
+      // Trigger the addRow method for the specified table
+      tables.value[tableIndex].rows.push({
+        Name: "",
+        Type: "",
+      });
     };
 
     const sendTablesToApi = () => {
       const apiUrl = 'your-api-endpoint';
 
-      // Use Axios to make a POST request
       axios
           .post(apiUrl, tables.value, {
             headers: {
@@ -47,11 +56,9 @@ export default {
             },
           })
           .then((response) => {
-            // Handle a successful response from the API here
             console.log('Tables sent successfully!');
           })
           .catch((error) => {
-            // Handle errors here
             console.error('Error sending tables to the API:', error);
           });
     };
@@ -60,6 +67,7 @@ export default {
       tables,
       addTable,
       removeTable,
+      addRowToTable,
       sendTablesToApi,
     };
   },
