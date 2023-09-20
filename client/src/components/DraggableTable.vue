@@ -27,59 +27,89 @@
 </template>
 
 <script>
-export default {
-  data() {
-    return {
-      isDragging: false,
-      containerLeft: 0,
-      containerTop: 0,
-      initialX: 0,
-      initialY: 0,
-      tableData: [
-        { "Name": "", "Type": "" },
-      ],
-      columnWidths: [
-        { name: 'Name', width: '100px', inputWidth: '100%' },
-        { name: 'Type', width: '50px', inputWidth: '100%' },
-        // Add more columns with their respective widths as needed
-      ],
-    };
-  },
-  methods: {
-    startDrag(event) {
-      if (event.target.classList.contains("draggable-handle")) {
-        this.isDragging = true;
-        this.initialX = event.clientX - this.containerLeft;
-        this.initialY = event.clientY - this.containerTop;
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
 
-        window.addEventListener("mousemove", this.dragContainer);
-        window.addEventListener("mouseup", this.stopDrag);
+export default {
+  props: {
+    index: Number, // Add a prop to pass the index of the table
+    onRemove: Function, // Add a prop to pass the remove function from the parent
+  },
+  setup(props) {
+    const isDragging = ref(false);
+    const containerLeft = ref(0);
+    const containerTop = ref(0);
+    const initialX = ref(0);
+    const initialY = ref(0);
+
+    const tableData = reactive([
+      { "Name": "", "Type": "" },
+    ]);
+
+    const columnWidths = reactive([
+      { name: 'Name', width: '100px', inputWidth: '100%' },
+      { name: 'Type', width: '50px', inputWidth: '100%' },
+      // Add more columns with their respective widths as needed
+    ]);
+
+    const startDrag = (event) => {
+      if (event.target.classList.contains("draggable-handle")) {
+        isDragging.value = true;
+        initialX.value = event.clientX - containerLeft.value;
+        initialY.value = event.clientY - containerTop.value;
+
+        window.addEventListener("mousemove", dragContainer);
+        window.addEventListener("mouseup", stopDrag);
       }
-    },
-    dragContainer(event) {
-      if (this.isDragging) {
-        const newX = event.clientX - this.initialX;
-        const newY = event.clientY - this.initialY;
-        this.containerLeft = newX;
-        this.containerTop = newY;
+    };
+
+    const dragContainer = (event) => {
+      if (isDragging.value) {
+        const newX = event.clientX - initialX.value;
+        const newY = event.clientY - initialY.value;
+        containerLeft.value = newX;
+        containerTop.value = newY;
       }
-    },
-    stopDrag() {
-      this.isDragging = false;
-      window.removeEventListener("mousemove", this.dragContainer);
-      window.removeEventListener("mouseup", this.stopDrag);
-    },
-    addRow() {
+    };
+
+    const stopDrag = () => {
+      isDragging.value = false;
+      window.removeEventListener("mousemove", dragContainer);
+      window.removeEventListener("mouseup", stopDrag);
+    };
+
+    const addRow = () => {
       const newRow = {};
-      this.columnWidths.forEach(column => {
+      columnWidths.forEach(column => {
         newRow[column.name] = "";
       });
-      this.tableData.push(newRow);
-    },
-    removeTable() {
-      // Emit a custom event to notify the parent component to remove this table
-      this.$emit("remove-table");
-    },
+      tableData.push(newRow);
+    };
+
+    const removeTable = () => {
+      // Call the remove function passed from the parent component
+      props.onRemove(props.index);
+    };
+
+    onMounted(() => {
+      // Any setup code you need when the component is mounted
+    });
+
+    onBeforeUnmount(() => {
+      // Clean up code when the component is about to be removed
+    });
+
+    return {
+      isDragging,
+      containerLeft,
+      containerTop,
+      tableData,
+      columnWidths,
+      startDrag,
+      dragContainer,
+      stopDrag,
+      addRow,
+      removeTable,
+    };
   },
 };
 </script>
@@ -94,7 +124,7 @@ export default {
 
 .draggable-handle {
   cursor: grab;
-  background-color: #ccc;
+  background-color: #2eecff;
   padding: 8px;
   margin: 0;
   user-select: none;
