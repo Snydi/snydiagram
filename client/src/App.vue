@@ -1,83 +1,55 @@
-<template>
-  <div id="app">
-    <Header />
+<script setup>
+import { Position, VueFlow } from '@vue-flow/core'
+import { ref, provide } from 'vue'
+import ToolbarNode from './components/ToolbarNode.vue'
 
-    <div v-for="(table, index) in tables" :key="table.Id">
-      <DraggableTable
-          :index="index"
-          :onRemove="removeTable"
-          :tableData="table"
-          @addRow="addRowToTable(index)"
-      ></DraggableTable>
-    </div>
+const defaultNodeStyle = {
+  border: '1px solid #10b981',
+  background: '#ef467e',
+  color: 'white',
+  borderRadius: '99px',
+}
 
-    <button @click="addTable">Add Table</button>
-    <button @click="sendTablesToApi">Send Tables to API</button>
-  </div>
-</template>
-
-<script>
-import { ref } from 'vue';
-import DraggableTable from './components/DraggableTable.vue';
-import Header from './components/Header.vue';
-import axios from 'axios';
-
-export default {
-  setup() {
-    const tables = ref([]);
-
-    const addTable = () => {
-      const newTable = {
-        Id: Date.now(), // Use "Id" instead of "id"
-        rows: [], // Initialize an empty array for "rows"
-      };
-      tables.value.push(newTable);
-    };
-
-    const removeTable = (index) => {
-      tables.value.splice(index, 1);
-    };
-
-    const addRowToTable = (tableIndex) => {
-      // Trigger the addRow method for the specified table
-      tables.value[tableIndex].rows.push({
-        Name: "",
-        Type: "",
-      });
-    };
-
-    const sendTablesToApi = () => {
-      const apiUrl = 'your-api-endpoint';
-
-      axios
-          .post(apiUrl, tables.value, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
-          .then((response) => {
-            console.log('Tables sent successfully!');
-          })
-          .catch((error) => {
-            console.error('Error sending tables to the API:', error);
-          });
-    };
-
-    return {
-      tables,
-      addTable,
-      removeTable,
-      addRowToTable,
-      sendTablesToApi,
-    };
+const elements = ref([
+  {
+    id: '1',
+    type: 'toolbar',
+    label: 'toolbar always open',
+    data: { toolbarPosition: Position.Top, toolbarVisible: true },
+    position: { x: 0, y: -100 },
+    style: defaultNodeStyle,
   },
-  components: {
-    DraggableTable,
-    Header,
-  },
-};
+])
+const defaultTableStyle = {
+  border: '1px solid #10b981',
+  background: '#ef467e',
+  color: 'white',
+  borderRadius: '5px',
+}
+const addTable = () => {
+  elements.value.push({
+    id: Math.random().toString(),
+    type: 'toolbar',
+    label: 'New Table',
+    data: {
+      toolbarPosition: Position.Top,
+      toolbarVisible: true
+    },
+    position: { x: 0, y: 0 },
+    style: defaultTableStyle,
+  })
+}
+
+provide('elements', elements)
+provide('addTable', addTable)
 </script>
 
-<style scoped>
-/* Styles remain the same */
-</style>
+<template>
+  <button @click="addTable">Add Table</button>
+  <VueFlow v-model="elements" fit-view-on-init class="vue-flow-basic-example">
+
+    <template #node-toolbar="nodeProps">
+      <ToolbarNode  :id="nodeProps.id" :data="nodeProps.data" :label="nodeProps.label" />
+    </template>
+  </VueFlow>
+</template>

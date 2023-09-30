@@ -1,7 +1,7 @@
 <template>
   <div class="draggable-container" :style="{ left: containerLeft + 'px', top: containerTop + 'px' }" @mousedown="startDrag">
     <div class="table-actions">
-      <button class="remove-button" @click="removeTable">X</button>
+      <button class="delete-button" @click="deleteTable">X</button>
     </div>
     <h1 class="draggable-handle">New table</h1>
     <div class="table-container">
@@ -11,7 +11,6 @@
           <tr>
             <th>Name</th>
             <th>Type</th>
-            <!-- Add more columns if needed -->
           </tr>
           </thead>
           <tbody>
@@ -22,7 +21,9 @@
             <td>
               <input type="text" v-model="row.Type" :style="{ width: '100%' }" />
             </td>
-            <!-- Add more columns if needed -->
+            <td>
+              <button class="delete-button" @click="deleteRow(rowIndex)">X</button>
+            </td>
           </tr>
           </tbody>
         </table>
@@ -33,15 +34,14 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref } from 'vue';
 
 export default {
   props: {
     index: Number,
-    onRemove: Function,
     tableData: Object,
   },
-  setup(props) {
+  setup(props, context) {
     const isDragging = ref(false);
     const containerLeft = ref(0);
     const containerTop = ref(0);
@@ -49,13 +49,13 @@ export default {
     const initialY = ref(0);
 
     const startDrag = (event) => {
-      if (event.target.classList.contains("draggable-handle")) {
+      if (event.target.classList.contains('draggable-handle')) {
         isDragging.value = true;
         initialX.value = event.clientX - containerLeft.value;
         initialY.value = event.clientY - containerTop.value;
 
-        window.addEventListener("mousemove", dragContainer);
-        window.addEventListener("mouseup", stopDrag);
+        window.addEventListener('mousemove', dragContainer);
+        window.addEventListener('mouseup', stopDrag);
       }
     };
 
@@ -70,28 +70,26 @@ export default {
 
     const stopDrag = () => {
       isDragging.value = false;
-      window.removeEventListener("mousemove", dragContainer);
-      window.removeEventListener("mouseup", stopDrag);
+      window.removeEventListener('mousemove', dragContainer);
+      window.removeEventListener('mouseup', stopDrag);
     };
 
     const addRow = () => {
       props.tableData.rows.push({
-        Name: "",
-        Type: "",
+        Name: '',
+        Type: '',
       });
     };
 
-    const removeTable = () => {
-      props.onRemove(props.index);
+    const deleteRow = (rowIndex) => {
+      props.tableData.rows.splice(rowIndex, 1);
     };
 
-    onMounted(() => {
-      // Any setup code you need when the component is mounted
-    });
+    const deleteTable = () => {
+      // Use context.emit to access the emit function
+      context.emit('deleteTable');
+    };
 
-    onBeforeUnmount(() => {
-      // Clean up code when the component is about to be removed
-    });
 
     return {
       isDragging,
@@ -101,21 +99,17 @@ export default {
       dragContainer,
       stopDrag,
       addRow,
-      removeTable,
+      deleteRow,
+      deleteTable,
     };
   },
 };
 </script>
 
 <style scoped>
-/* Styles remain the same */
-</style>
-
-
-<style scoped>
 .draggable-container {
   position: absolute;
-  width: 400px; /* Adjust the width as needed */
+  width: 400px;
   border: 1px solid #ccc;
   background-color: #fff;
 }
@@ -135,7 +129,7 @@ export default {
   padding: 4px;
 }
 
-.remove-button {
+.delete-button {
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -145,7 +139,6 @@ export default {
 
 .table-container {
   border-collapse: collapse;
-
   overflow-x: auto; /* Add horizontal scrollbar */
 }
 
@@ -161,6 +154,6 @@ th,
 td {
   border: 1px solid #ccc;
   padding: 8px;
-  white-space: nowrap; /* Prevent text from wrapping */
+  white-space: nowrap;
 }
 </style>

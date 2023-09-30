@@ -21,3 +21,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/auth/register', [UserController::class, 'register']);
 Route::post('/auth/login', [UserController::class, 'login']);
 
+
+//Route::middleware(['cors'])->group(function () {
+//
+//});
+Route::post('/mysql/save', [\App\Http\Controllers\MySqlController::class, 'save']);
