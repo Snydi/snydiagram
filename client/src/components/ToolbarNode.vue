@@ -6,18 +6,12 @@ const props = defineProps(['id', 'data', 'label'])
 
 const elements = inject('elements')
 
-const defaultNodeStyle = {
-  border: '1px solid #10b981',
-  background: '#ef467e',
-  color: 'white',
-  borderRadius: '99px',
-}
-
-const defaultRowStyle = {
+const RowStyle = {
   border: '1px solid #10b981',
   background: '#ffffff',
   color: '#000000',
   borderRadius: '0px',
+  width: '200px',
 }
 
 let lastYPosition = 0;
@@ -27,17 +21,15 @@ const addRow = () => {
     id: Date.now().toString(), // use a timestamp to generate a unique id
     type: 'row', // change this to your actual row node type
     label: 'New Row',
-    position: { x: position.x, y: position.y + 100 }, // position the new node below the current node
-    style: defaultRowStyle,
+    position: { x: position.x, y: position.y + 50 }, // position the new node below the current node
+    style: RowStyle,
     draggable: false, //disable dragging for rows
     parentNode: props.id, //set the parent of the node (have it dragged with parent
+    sourcePosition: 'right', // source handle is on the right
+    targetPosition: 'left', // target handle is on the left
   }]
-  lastYPosition = position.y + 100; // Update lastYPosition each time a new node is added
+  lastYPosition = position.y + 35; // Update lastYPosition each time a new node is added
 }
-
-
-
-
 </script>
 
 <template>
@@ -55,6 +47,5 @@ const addRow = () => {
     {{ props.label }}
   </div>
 
-  <Handle type="target" :position="Position.Left" />
-  <Handle type="source" :position="Position.Right" />
+
 </template>
