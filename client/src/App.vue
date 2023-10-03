@@ -1,7 +1,7 @@
 <script setup>
 import { Handle, Position, VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background, BackgroundVariant } from '@vue-flow/background'
-import { ref, provide, defineProps, inject } from 'vue'
+import { ref, provide } from 'vue'
 const { updateEdge, addEdges } = useVueFlow();
 
 function onConnect(params) {
@@ -15,21 +15,26 @@ function onEdgeUpdate({ edge, connection }) {
 const TableStyle = {
   display: 'flex',
   border: '1px solid #10b981',
-  background: '#ff3736',
+  background: '#ff3b25',
+  borderColor: '#ff3b25',
   color: 'white',
   borderRadius: '5px',
-  width: '200px',
-  height: '50px',
+  width: '300px',
+  height: '60px',
   alignItems: 'center',
   justifyContent: 'space-between',
 }
 const RowStyle = {
+  display: 'flex',
   border: '1px solid #10b981',
+  borderColor: '#ff3b25',
   background: '#ffffff',
   color: '#000000',
-  borderRadius: '0px',
-  width: '200px',
-  height: '50px',
+  borderRadius: '5px',
+  width: '300px',
+  height: '40px',
+  alignItems: 'center',
+  justifyContent: 'start',
 }
 const elements = ref([
   {
@@ -62,26 +67,23 @@ const updateLabel = (id, newLabel) => {
     element.label = newLabel;
   }
 }
-
 const addRow = (nodeProps) => {
-
   const existingRows = elements.value.filter(el => el.parentNode === nodeProps.id);
   const position = nodeProps.data.position || { x: 0, y: 0 }
   elements.value = [...elements.value, {
     id: Date.now().toString(), // use a timestamp to generate a unique id
     type: 'row', // change this to your actual row node type
     label: 'New Row',
-    position: { x: position.x, y: position.y + 50 * (existingRows.length +1) }, // calculate y based on number of existing rows
+    position: { x: position.x, y: position.y + 60 + 40 * existingRows.length },
     style: RowStyle,
-    draggable: false, //disable dragging for rows
-    parentNode: nodeProps.id, //set the parent of the node (have it dragged with parent
-    sourcePosition: 'right', // source handle is on the right
-    targetPosition: 'left', // target handle is on the left
-    data: { editing: false, showModal: false, KeyMod: '', selectedSqlType: '' },
+    draggable: false,
+    parentNode: nodeProps.id,
+    sourcePosition: 'right',
+    targetPosition: 'left',
+    data: { editing: false, showModal: false, KeyMod: '', selectedSqlType: '', nullable: false },
   }]
-
-
 }
+
 
 const deleteNode = (nodeId) => {
 
@@ -108,12 +110,16 @@ const collectData = () => {
     return {
       table: node.label,
       rows: rows.map(row => {
-        return {id: row.id , label: row.label, KeyMod: row.data.KeyMod, sqlType: row.data.selectedSqlType, connectedTo: links.filter(link => link.target === row.id ).map(link => link.source)};
+        return {
+          id: row.id ,
+          label: row.label,
+          KeyMod: row.data.KeyMod,
+          sqlType: row.data.selectedSqlType,
+          nullable: row.data.nullable,
+          connectedTo: links.filter(link => link.source === row.id ).map(link => link.target)};
       }),
     }
-
   });
-
   console.log(data);
 
 }
@@ -124,11 +130,18 @@ const updateKeyMod = (id, KeyMod) => {
     element.data.KeyMod = KeyMod;
   }
 }
+const toggleNullable = (id) => {
+  const element = elements.value.find(el => el.id=== id);
+  if (element) {
+    element.data.nullable = !element.data.nullable;
+  }
+}
+
+provide('toggleNullable', toggleNullable);
 provide('updateKeyMod', updateKeyMod);
 provide('updateLabel', updateLabel);
 provide('elements', elements)
 provide('addTable', addTable)
-
 </script>
 
 <template>
@@ -153,19 +166,27 @@ provide('addTable', addTable)
       <input class="table_input" v-if="data.editing" :value="label" @input="updateLabel(id, $event.target.value)" @blur="data.editing = false">
       <span class="table_input"  v-else @click="data.editing = true">{{ label }}</span>
 
-      <button class ="table_button" @mousedown.stop  @click="deleteNode(id)">
+      <button class="table_button" @mousedown.stop  @click="deleteNode(id)">
         <img class="table_icon" src="./components/icons/cancel.svg" alt="Cancel">
       </button>
     </template>
 
     <template #node-row="{ id, data, label }">
-      <input class="row_input" v-if="data.editing" :value="label" @input="updateLabel(id, $event.target.value)" @blur="data.editing = false">
-      <span class="row_input" v-else @click="data.editing = true">{{ label }}</span>
+      <input  class="row_input" v-if="data.editing" :value="label" @input="updateLabel(id, $event.target.value)" @blur="data.editing = false">
+      <span class="row_text" v-else @click="data.editing = true">{{ label }}</span>
+
+      <select v-model="data.selectedSqlType">
+        <option selected="selected" value="INT">INT</option>
+        <option value="VARCHAR">VARCHAR</option>
+        <option value="TEXT">TEXT</option>
+        <option value="DATE">DATE</option>
+      </select>
+
       <button class="table_button" @mousedown.stop @click="data.showModal = !data.showModal">
         <img class="table_icon" src="./components/icons/key.svg" alt="Key">
       </button>
 
-      <div class="modal" v-if="data.showModal">
+      <div class="modal row_select" v-if="data.showModal">
         <select v-model="data.KeyMod" @change="updateKeyMod(id, data.KeyMod)">
           <option selected="selected" value="None">None</option>
           <option value="Primary">Primary</option>
@@ -175,16 +196,15 @@ provide('addTable', addTable)
         <button class="modal_close_button" @click="data.showModal = false">Close</button>
       </div>
 
-      <select v-model="data.selectedSqlType">
-        <option value="">Select SQL Type</option>
-        <option value="INT">INT</option>
-        <option value="VARCHAR">VARCHAR</option>
-        <option value="TEXT">TEXT</option>
-        <option value="DATE">DATE</option>
-      </select>
+      <button class="table_button nullable_button" :class="{ 'nullable_on': data.nullable }" @mousedown.stop @click="toggleNullable(id)">
+        N
+      </button>
+
+
       <button class ="table_button" @mousedown.stop  @click="deleteNode(id)">
         <img class="table_icon" src="./components/icons/cancel.svg" alt="Cancel">
       </button>
+
       <Handle type="source" position="right" />
       <Handle type="target" position="left" />
     </template>
@@ -201,7 +221,8 @@ provide('addTable', addTable)
 }
 .table_button {
   width: 15%;
-  height: 70%;
+  height: 80%;
+  margin-top: 5px;
   padding: 0;
   border: none;
   background: none;
@@ -209,6 +230,15 @@ provide('addTable', addTable)
 .table_icon {
   width: 70%;
   height: 70%;
+}
+select{
+  width: 70px;
+}
+.row_text{
+  width: 150px;
+}
+.row_input{
+  width: 125px;
 }
 .table_input{
   width: 80%;
@@ -219,5 +249,13 @@ input {
   color: #000;
   background-color: #fff;
   border: none;
+}
+.nullable_button {
+  background-color: #ff0000;
+  color: #ffffff;
+}
+
+.nullable_button.nullable_on {
+  background-color: #00ff00;
 }
 </style>
